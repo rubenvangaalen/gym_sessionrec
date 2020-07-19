@@ -2,35 +2,23 @@ import gym
 import matplotlib.pyplot as plt
 from gym.envs.registration import register
 
-from datasets import MSSD_Mini_Topics_Simple
-
-# X should be random, but session_position column should be 1.
-# Y should be all rows after X untill it starts at 1 again.
-x = 4
-y = 14
-
 register('songs-v0',
-         entry_point='envs.discrete_topics:Simple',
-         kwargs={
-             'df': MSSD_Mini_Topics_Simple,
-             'window_size': 1,  # Look only at previous row for the state
-             'frame_bound': (x, y)
-         })
+         entry_point='envs.music_session_env:MusicSessionEnv',
+         kwargs={'window_size': 1, 'session_length': 20})
 
-env = gym.make('songs-v0',
-               df=MSSD_Mini_Topics_Simple,
-               window_size=1,  # Look only at previous row for the state
-               frame_bound=(x, y)
-               )
+env = gym.make('songs-v0', window_size=1, session_length=20)
 
-observation = env.reset()
-while True:
-    action = env.action_space.sample()
-    observation, reward, done, info = env.step(action)
-    # env.render()
-    if done:
-        print("info:", info)
-        break
+for i in range(20):  # For 20 episodes
+    observation = env.reset()
+    while True:
+        # Take a random action. TODO: use Q-learning to actually learn between episodes.
+        action = env.action_space.sample()
+
+        observation, reward, done, info = env.step(action)
+        # env.render()
+        if done:
+            print("info:", info)
+            break
 
 plt.cla()
 env.render_all()
