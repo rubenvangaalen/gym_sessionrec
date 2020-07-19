@@ -6,4 +6,4 @@ Make sure to have `python3` and `pipenv` installed. Run with the following comma
 
 Structure of code is based on the following example:
 
-https://github.com/AminHP/gym-anytrading
+https://github.com/openai/gym/blob/master/gym/envs/toy_text/blackjack.py
