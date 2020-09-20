@@ -56,13 +56,15 @@ class MusicSessionEnv(gym.Env):
         self.action_space = spaces.Discrete(NUM_CATEGORIES)  # 16 options based on the topics
         # define observation space, 16 genres and boolean for skip: 16*2 = 32
         self.observation_space = spaces.Tuple((
+            spaces.Discrete(NUM_CATEGORIES),  # Previous previous topic
+            spaces.Discrete(2),  # Whether previous previous song was skipped or not
             spaces.Discrete(NUM_CATEGORIES),  # Previous topic
             spaces.Discrete(2),  # Whether previous song was skipped or not
         ))
 
         # episode
         self._start_state = None
-        self._start_tick = self.window_size # Start at 1
+        self._start_tick = self.window_size  # Start at 1
         self._end_tick = session_length  # Set end tick from constructor parameter
         self._done = None  # Initialize variable
         self._current_tick = None  # Initialize variable
@@ -74,12 +76,13 @@ class MusicSessionEnv(gym.Env):
         # start with a given music topic in a session
         # assumed is that this one has not been skipped
         self._start_state = (randrange(NUM_CATEGORIES), NO_SKIP)
+        _next_state = (self._start_state[0], NO_SKIP)
         self._done = False
         self._current_tick = self._start_tick
         self._total_reward = 0.0
-        self._history = [self._start_state]
+        self._history = [self._start_state, _next_state]
 
-        return self._start_state
+        return *self._start_state, *_next_state
 
     # required function
     def step(self, action):
@@ -92,11 +95,7 @@ class MusicSessionEnv(gym.Env):
         # END: keep track of episode
 
         previous_topic, previous_skip = self._history[-1]  # Get last action and skip from history
-
-        if self._current_tick == 2:
-            oldest_topic, oldest_skip = self._history[-1]  # Get last action and skip from history
-        else:
-            oldest_topic, oldest_skip = self._history[-2]  # Get last action and skip from history
+        oldest_topic, oldest_skip = self._history[-2]  # Get last action and skip from history
 
 
         # Will return a 1 or 0.
@@ -107,8 +106,8 @@ class MusicSessionEnv(gym.Env):
         else:
             next_topic = action
 
-        observation = (next_topic, skip)
-        self._history.append(observation)
+        decision = (next_topic, skip)
+        self._history.append(decision)
 
         self._total_reward += skip
 
@@ -116,6 +115,7 @@ class MusicSessionEnv(gym.Env):
         info = dict(total_reward=self._total_reward)
 
         # return observation, reward, done, info
+        observation = (previous_topic, previous_skip, *decision)
         return observation, skip, self._done, info
 
     def render_all(self, mode='human'):

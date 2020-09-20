@@ -7,25 +7,25 @@ from gym.envs.registration import register
 
 register('songs-v0',
          entry_point='envs.music_session_env:MusicSessionEnv',
-         kwargs={'window_size': 1, 'session_length': 20})
+         kwargs={'window_size': 2, 'session_length': 21})
 
-env = gym.make('songs-v0', window_size=1, session_length=20)
+env = gym.make('songs-v0', window_size=2, session_length=21)
 
 # INITIALISE Q TABLE TO ZERO
-Q = np.zeros((16, 2, 16))  # category[-2], skipped[-2], category[-1], skipped[-1], action
+Q = np.zeros((16, 2, 16, 2, 16))  # category[-2], skipped[-2], category[-1], skipped[-1], action
 
 # HYPERPARAMETERS
-train_episodes = 25000  # Total train episodes
+train_episodes = 10000  # Total train episodes
 test_episodes = 10  # Total test episodes
 max_steps = 20  # Max steps per episode
-alpha = 0.05  # Learning rate
+alpha = 0.1  # Learning rate
 gamma = 0.6  # Discounting rate
 
 # EXPLORATION / EXPLOITATION PARAMETERS
-epsilon = 0.4  # Exploration rate
+epsilon = 0.01  # Exploration rate
 max_epsilon = 1  # Exploration probability at start
-min_epsilon = 0.001  # Minimum exploration probability
-decay_rate = 0.0005  # Exponential decay rate for exploration prob
+min_epsilon = 0.01  # Minimum exploration probability
+decay_rate = 0.001  # Exponential decay rate for exploration prob
 
 # TRAINING PHASE
 training_rewards = []  # list of rewards
@@ -36,7 +36,7 @@ matrix = np.zeros((train_episodes, simulations))
 
 for runs in range(simulations):
     for episode in range(train_episodes):
-        state: Tuple[int, int] = env.reset()  # Reset the environment
+        state: Tuple[int, int, int, int] = env.reset()  # Reset the environment
         cumulative_training_rewards = 0
 
         for step in range(max_steps):
