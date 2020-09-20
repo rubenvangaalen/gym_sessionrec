@@ -12,10 +12,10 @@ from gym import spaces
 ###
 
 # Dataset with rows for topics not skipped previously
-historic_data_no_skip = [list(row)[1:] for row in pd.read_csv("datasets/data/Reward_Previous_No_Skip.csv").values]
-
-# Dataset with rows for topics skipped previously
-historic_data_skip = [list(row)[1:] for row in pd.read_csv("datasets/data/Reward_Previous_Skip.csv").values]
+play_play = [list(row)[1:] for row in pd.read_csv("datasets/data/play_play.csv").values]
+play_skip = [list(row)[1:] for row in pd.read_csv("datasets/data/play_skip.csv").values]
+skip_skip = [list(row)[1:] for row in pd.read_csv("datasets/data/skip_skip.csv").values]
+skip_play = [list(row)[1:] for row in pd.read_csv("datasets/data/skip_play.csv").values]
 
 
 class Actions(Enum):
@@ -57,11 +57,12 @@ class MusicSessionEnv(gym.Env):
         # define observation space, 16 genres and boolean for skip: 16*2 = 32
         self.observation_space = spaces.Tuple((
             spaces.Discrete(NUM_CATEGORIES),  # Previous topic
-            spaces.Discrete(2)))  # Whether previous song was skipped or not
+            spaces.Discrete(2),  # Whether previous song was skipped or not
+        ))
 
         # episode
         self._start_state = None
-        self._start_tick = self.window_size  # Start at 1
+        self._start_tick = self.window_size # Start at 1
         self._end_tick = session_length  # Set end tick from constructor parameter
         self._done = None  # Initialize variable
         self._current_tick = None  # Initialize variable
@@ -92,11 +93,17 @@ class MusicSessionEnv(gym.Env):
 
         previous_topic, previous_skip = self._history[-1]  # Get last action and skip from history
 
+        if self._current_tick == 2:
+            oldest_topic, oldest_skip = self._history[-1]  # Get last action and skip from history
+        else:
+            oldest_topic, oldest_skip = self._history[-2]  # Get last action and skip from history
+
+
         # Will return a 1 or 0.
-        skip = self._calculate_skip(previous_topic, previous_skip, action)
+        skip = self._calculate_skip(previous_topic, previous_skip, oldest_topic, oldest_skip, action)
 
         if skip == SKIP:
-            next_topic = previous_topic
+            next_topic = action
         else:
             next_topic = action
 
@@ -120,11 +127,18 @@ class MusicSessionEnv(gym.Env):
     def _process_data(self):
         raise NotImplementedError
 
-    def _calculate_skip(self, previous_topic, previous_skip, action_topic):
+    def _calculate_skip(self, previous_topic, previous_skip, oldest_topic, oldest_skip, action_topic):
         if previous_skip == 0:
-            no_skip_probability = historic_data_no_skip[previous_topic][action_topic]
+            if oldest_skip == 0:
+                no_skip_probability = skip_skip[((previous_topic*16)+oldest_topic)][action_topic]
+            else:
+                no_skip_probability = play_skip[((previous_topic*16)+oldest_topic)][action_topic]
         else:
-            no_skip_probability = historic_data_skip[previous_topic][action_topic]
+            if oldest_skip == 0:
+                no_skip_probability = skip_play[((previous_topic*16)+oldest_topic)][action_topic]
+            else:
+                no_skip_probability = play_play[((previous_topic*16)+oldest_topic)][action_topic]
+
 
         # Generate random number between 0 and 1
         random_number = random()
